@@ -967,6 +967,21 @@ class Service:
             cursor.close()
             conn.close()
 
+    def delete(self):
+        if self.id is None:
+            return
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("DELETE FROM services WHERE id = %s", (self.id,))
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            raise e
+        finally:
+            cursor.close()
+            conn.close()
+
     def to_dict(self):
         return {
             'id': self.id,
