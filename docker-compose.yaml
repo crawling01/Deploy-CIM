@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: mysql_db
+    command: 
+      - bash
+      - -c
+      - |
+        chmod +x /docker-entrypoint-initdb.d/init.sh
+        exec docker-entrypoint.sh mysqld
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      TZ: Asia/Jakarta
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/conf:/etc/mysql/conf.d
+      - ./mysql/init:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 30s
+      retries: 20
+
+  waha:
+    image: devlikeapro/waha
+    container_name: waha
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./sessions:/app/.sessions
+      - ./media:/app/.media
+    env_file:
+      - .env
+    networks:
+      - app-network
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build: ./app
+    container_name: web_app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      waha:
+        condition: service_started
+    env_file:
+      - .env
+    volumes:
+      - ./app:/app
+    ports:
+      - "7860:7860"
+    networks:
+      - app-network
+
+volumes:
+  mysql_data:
+
+networks:
+  app-network:
+    driver: bridge
