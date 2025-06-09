@@ -690,33 +690,24 @@
                 });
         }
     
-        // Save category (POST or PUT)
-        // Update form submission handler
         document.getElementById('categoryForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
             const categoryId = document.getElementById('modalCategoryId').value;
-            const formData = {
-                name: document.getElementById('modalName').value,
-                slug: document.getElementById('modalSlug').value,
-                description: document.getElementById('modalDescription').value
-            };
-            
-            if (!formData.name || !formData.slug) {
-                showFlashMessage('danger', 'Name and slug are required');
-                return;
-            }
+            const formData = new FormData();
+            formData.append('name', document.getElementById('modalName').value);
+            formData.append('slug', document.getElementById('modalSlug').value);
+            formData.append('description', document.getElementById('modalDescription').value);
             
             const endpoint = categoryId ? `/portfolio_category/${categoryId}` : '/portfolio_categories';
             const method = categoryId ? 'PUT' : 'POST';
             
             fetch(endpoint, {
                 method: method,
+                body: formData,
                 headers: {
-                    'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify(formData)
+                }
             })
             .then(response => {
                 if (!response.ok) {
