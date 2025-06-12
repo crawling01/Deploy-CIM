@@ -669,19 +669,30 @@
             document.getElementById('categoryModal').style.display = 'flex';
         }
     
-        // Open modal for editing existing category
+       // Open modal for editing existing category
         function openEditModal(categoryId) {
+            console.log('Fetching category ID:', categoryId); // Debug log
+            
             fetch(`/portfolio_category/${categoryId}`)
                 .then(response => {
+                    console.log('Response status:', response.status); // Debug log
                     if (!response.ok) throw new Error('Failed to load category');
                     return response.json();
                 })
                 .then(data => {
-                    if (data.status !== 'success') {
-                        throw new Error(data.message || 'Category not found');
+                    console.log('Received data:', data); // Debug log
+                    
+                    if (!data || data.status !== 'success') {
+                        throw new Error(data?.message || 'Invalid category data');
                     }
                     
                     const category = data.category;
+                    if (!category) {
+                        throw new Error('Category data is empty');
+                    }
+                    
+                    console.log('Category data to display:', category); // Debug log
+                    
                     document.getElementById('modalTitle').textContent = 'Edit Category';
                     document.getElementById('modalCategoryId').value = category.id;
                     document.getElementById('modalName').value = category.name || '';
