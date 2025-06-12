@@ -676,17 +676,22 @@
                     if (!response.ok) throw new Error('Failed to load category');
                     return response.json();
                 })
-                .then(category => {
+                .then(data => {
+                    if (data.status !== 'success') {
+                        throw new Error(data.message || 'Category not found');
+                    }
+                    
+                    const category = data.category;
                     document.getElementById('modalTitle').textContent = 'Edit Category';
                     document.getElementById('modalCategoryId').value = category.id;
-                    document.getElementById('modalName').value = category.name;
-                    document.getElementById('modalSlug').value = category.slug;
+                    document.getElementById('modalName').value = category.name || '';
+                    document.getElementById('modalSlug').value = category.slug || '';
                     document.getElementById('modalDescription').value = category.description || '';
                     document.getElementById('categoryModal').style.display = 'flex';
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    showFlashMessage('danger', 'Failed to load category data');
+                    showFlashMessage('danger', error.message || 'Failed to load category data');
                 });
         }
     
