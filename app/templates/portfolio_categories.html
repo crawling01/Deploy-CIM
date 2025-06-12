@@ -694,20 +694,24 @@
             e.preventDefault();
             
             const categoryId = document.getElementById('modalCategoryId').value;
-            const formData = new FormData();
-            formData.append('name', document.getElementById('modalName').value);
-            formData.append('slug', document.getElementById('modalSlug').value);
-            formData.append('description', document.getElementById('modalDescription').value);
+            const isEdit = !!categoryId;
             
-            const endpoint = categoryId ? `/portfolio_category/${categoryId}` : '/portfolio_categories';
-            const method = categoryId ? 'PUT' : 'POST';
+            const data = {
+                name: document.getElementById('modalName').value,
+                slug: document.getElementById('modalSlug').value,
+                description: document.getElementById('modalDescription').value
+            };
+            
+            const endpoint = isEdit ? `/portfolio_category/${categoryId}` : '/portfolio_categories';
+            const method = isEdit ? 'PUT' : 'POST';
             
             fetch(endpoint, {
                 method: method,
-                body: formData,
                 headers: {
+                    'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
-                }
+                },
+                body: JSON.stringify(data)
             })
             .then(response => {
                 if (!response.ok) {
@@ -730,7 +734,13 @@
             });
         });
 
-        // Update delete handler
+        // Confirm delete action
+        function confirmDelete(categoryId) {
+            document.getElementById('deleteCategoryId').value = categoryId;
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
+        
+        // Handle delete form submission
         document.getElementById('deleteForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const categoryId = document.getElementById('deleteCategoryId').value;
@@ -738,6 +748,7 @@
             fetch(`/portfolio_category/${categoryId}`, {
                 method: 'DELETE',
                 headers: {
+                    'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             })
@@ -761,42 +772,11 @@
                 showFlashMessage('danger', errorMsg);
             });
         });
-    
-        // Confirm delete action
-        function confirmDelete(categoryId) {
-            document.getElementById('deleteCategoryId').value = categoryId;
-            document.getElementById('deleteModal').style.display = 'flex';
-        }
-    
-        // Handle delete form submission
-        document.getElementById('deleteForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const categoryId = document.getElementById('deleteCategoryId').value;
-            
-            fetch(`/portfolio_category/${categoryId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => {
-                if (!response.ok) throw new Error('Delete failed');
-                return response.json();
-            })
-            .then(data => {
-                showFlashMessage('success', data.message || 'Category deleted');
-                closeModal();
-                setTimeout(() => window.location.reload(), 1000);
-            })
-            .catch(error => {
-                showFlashMessage('danger', error.message);
-            });
-        });
-    
-        // Close modal
+
         function closeModal() {
             document.getElementById('categoryModal').style.display = 'none';
             document.getElementById('deleteModal').style.display = 'none';
+            document.getElementById('categoryForm').reset();
         }
     
         // Auto-generate slug from name
