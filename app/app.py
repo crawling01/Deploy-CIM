@@ -1,8 +1,8 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, current_app
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 from flask import Response
 from functools import wraps
-from models import User, TeamMember, PortfolioCategory, Portfolio, Gallery, ServiceCategory, Service, Testimonial
+from models import User, TeamMember, PortfolioCategory, Portfolio, Gallery, ServiceCategory, Service, Testimonial, ClientLogo
 from database import get_db_connection, DBCursor
 import json
 from jinja2 import Environment
@@ -944,6 +944,99 @@ def service_detail(service_id):
             return jsonify({'error': str(e)}), 500
     
     return jsonify({'error': 'Method not allowed'}), 405
+
+@app.route('/client_logos', methods=['GET', 'POST'])
+@login_required
+@is_admin
+def client_logos():
+    if request.method == 'POST':
+        try:
+            name = request.form.get('name')
+            url = request.form.get('url')
+            is_active = request.form.get('is_active', '0') == '1'
+            logo_file = request.files.get('logo')
+            
+            if not name:
+                flash('Name is required', 'danger')
+                return redirect(url_for('client_logos'))
+            
+            image_path = None
+            if logo_file:
+                image_path = ClientLogo.handle_upload(logo_file)
+                if not image_path:
+                    flash('Invalid logo file', 'danger')
+                    return redirect(url_for('client_logos'))
+            
+            new_logo = ClientLogo(
+                name=name,
+                image_path=image_path,
+                url=url,
+                is_active=is_active
+            )
+            
+            if new_logo.save():
+                flash('Client logo added successfully', 'success')
+                return jsonify({'status': 'success', 'message': 'Client logo added successfully'})
+            else:
+                flash('Failed to save client logo', 'danger')
+                return jsonify({'status': 'error', 'message': 'Failed to save client logo'}), 400
+            
+        except Exception as e:
+            current_app.logger.error(f"Error adding client logo: {e}")
+            flash('An error occurred while adding client logo', 'danger')
+            return jsonify({'status': 'error', 'message': str(e)}), 500
+    
+    logos = ClientLogo.get_all(active_only=False)
+    return render_template('client_logos.html', logos=logos)
+
+@app.route('/client_logo/<int:logo_id>', methods=['GET', 'POST', 'DELETE'])
+@login_required
+@is_admin
+def client_logo_detail(logo_id):
+    logo = ClientLogo.get_by_id(logo_id)
+    if not logo:
+        return jsonify({'error': 'Client logo not found'}), 404
+    
+    if request.method == 'POST':
+        try:
+            logo.name = request.form.get('name', logo.name)
+            logo.url = request.form.get('url', logo.url)
+            logo.is_active = request.form.get('is_active', 'false') == 'true'
+            
+            logo_file = request.files.get('logo')
+            if logo_file:
+                new_image_path = ClientLogo.handle_upload(logo_file, logo.image_path)
+                if new_image_path:
+                    logo.image_path = new_image_path
+            
+            if logo.save():
+                flash('Client logo updated successfully', 'success')
+            else:
+                flash('Failed to update client logo', 'danger')
+            
+            return redirect(url_for('client_logos'))
+        
+        except Exception as e:
+            current_app.logger.error(f"Error updating client logo: {e}")
+            flash('An error occurred while updating client logo', 'danger')
+            return redirect(url_for('client_logos'))
+    
+    elif request.method == 'DELETE':
+        try:
+            if logo.delete():
+                return jsonify({'message': 'Client logo deleted successfully'})
+            return jsonify({'error': 'Failed to delete client logo'}), 500
+        except Exception as e:
+            current_app.logger.error(f"Error deleting client logo: {e}")
+            return jsonify({'error': str(e)}), 500
+    
+    return jsonify({
+        'id': logo.id,
+        'name': logo.name,
+        'image_path': logo.image_path,
+        'url': logo.url,
+        'is_active': logo.is_active
+    })
 
 @app.route('/settings', methods=['GET'])
 @login_required
