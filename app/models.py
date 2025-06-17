@@ -1169,3 +1169,120 @@ class Testimonial:
             'is_active': self.is_active,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None
         }
+
+class ClientLogo:
+    def __init__(self, id=None, name=None, image_path=None, url=None, is_active=True, created_at=None, updated_at=None):
+        self.id = id
+        self.name = name
+        self.image_path = image_path
+        self.url = url
+        self.is_active = is_active  # Boolean value
+        self.created_at = created_at
+        self.updated_at = updated_at
+
+    @staticmethod
+    def get_all(active_only=True):
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        try:
+            query = "SELECT * FROM client_logos"
+            if active_only:
+                query += " WHERE is_active = TRUE"
+            query += " ORDER BY name ASC"
+            
+            cursor.execute(query)
+            return [ClientLogo(**row) for row in cursor.fetchall()]
+        finally:
+            cursor.close()
+            conn.close()
+
+    @staticmethod
+    def get_by_id(logo_id):
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute("SELECT * FROM client_logos WHERE id = %s", (logo_id,))
+            row = cursor.fetchone()
+            return ClientLogo(**row) if row else None
+        finally:
+            cursor.close()
+            conn.close()
+
+    def save(self):
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            if self.id is None:  # Insert new
+                cursor.execute(
+                    "INSERT INTO client_logos (name, image_path, url, is_active, created_at) "
+                    "VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)",
+                    (self.name, self.image_path, self.url, self.is_active)
+                )
+                self.id = cursor.lastrowid
+            else:  # Update existing
+                cursor.execute(
+                    "UPDATE client_logos SET name = %s, image_path = %s, url = %s, is_active = %s "
+                    "WHERE id = %s",
+                    (self.name, self.image_path, self.url, self.is_active, self.id)
+                )
+            conn.commit()
+            return True
+        except Exception as e:
+            conn.rollback()
+            current_app.logger.error(f"Error saving client logo: {e}")
+            return False
+        finally:
+            cursor.close()
+            conn.close()
+
+    def delete(self):
+        if self.id is None:
+            return False
+            
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            # Hapus file gambar terlebih dahulu
+            if self.image_path:
+                try:
+                    os.remove(os.path.join(current_app.static_folder, self.image_path))
+                except Exception as e:
+                    current_app.logger.error(f"Error deleting image file: {e}")
+
+            cursor.execute("DELETE FROM client_logos WHERE id = %s", (self.id,))
+            conn.commit()
+            return cursor.rowcount > 0
+        except Exception as e:
+            conn.rollback()
+            current_app.logger.error(f"Error deleting client logo {self.id}: {e}")
+            return False
+        finally:
+            cursor.close()
+            conn.close()
+
+    @staticmethod
+    def handle_upload(file, existing_path=None):
+        if not file or file.filename == '':
+            return None
+
+        # Hapus file lama jika ada
+        if existing_path:
+            try:
+                os.remove(os.path.join(current_app.static_folder, existing_path))
+            except Exception as e:
+                current_app.logger.error(f"Error deleting old image: {e}")
+
+        # Generate nama file yang aman
+        filename = secure_filename(file.filename)
+        unique_filename = f"client_logo_{datetime.now().strftime('%Y%m%d%H%M%S')}_{filename}"
+        upload_folder = os.path.join(current_app.static_folder, 'uploads', 'clients')
+        
+        # Pastikan folder upload ada
+        os.makedirs(upload_folder, exist_ok=True)
+        
+        # Simpan file
+        file_path = os.path.join(upload_folder, unique_filename)
+        file.save(file_path)
+        
+        # Return path relatif dari static folder
+        return os.path.join('uploads', 'clients', unique_filename)
