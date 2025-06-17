@@ -377,6 +377,65 @@
                 grid-template-columns: 1fr;
             }
         }
+
+     /* Tambahkan style untuk notifikasi */
+        .alert-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1100;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .alert {
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+
+        .alert-info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .alert .close-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: inherit;
+            font-size: 18px;
+            margin-left: 10px;
+        }
     </style>
     <script>
         fetch('http://localhost:3000/api/admin')
@@ -425,6 +484,10 @@
                 <i class="fas fa-tags"></i>
                 <span>Service Categories</span>
             </a>
+            <a href="/client_logos" class="menu-item">
+                <i class="fas fa-images"></i>
+                <span>Client Logos</span>
+            </a>
             <a href="/team_management" class="menu-item">
                 <i class="fas fa-users"></i>
                 <span>Team</span>
@@ -446,6 +509,28 @@
                 <span>Settings</span>
             </a>
         </div>
+    </div>
+    <div id="alert-container" class="alert-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <div style="display: flex; align-items: center;">
+                            <i class="fas 
+                                {% if category == 'success' %}fa-check-circle{% endif %}
+                                {% if category == 'danger' %}fa-exclamation-circle{% endif %}
+                                {% if category == 'warning' %}fa-exclamation-triangle{% endif %}
+                                {% if category == 'info' %}fa-info-circle{% endif %}
+                            "></i>
+                            <span style="margin-left: 10px;">{{ message }}</span>
+                        </div>
+                        <button type="button" class="close-btn" onclick="this.parentElement.remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
     </div>
     
     <!-- Main Content -->
@@ -545,5 +630,98 @@
             </div>
         </div>
     </div>
+    <script>
+        // Fungsi untuk menampilkan notifikasi
+        function showFlashMessage(type, message) {
+            const alertContainer = document.getElementById('alert-container');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.innerHTML = `
+                <div style="display: flex; align-items: center;">
+                    <i class="fas ${getIconForType(type)}"></i>
+                    <span style="margin-left: 10px;">${message}</span>
+                </div>
+                <button class="close-btn" onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            alertContainer.appendChild(alert);
+            
+            // Auto close setelah 5 detik
+            setTimeout(() => {
+                alert.style.transition = 'opacity 0.5s';
+                alert.style.opacity = '0';
+                setTimeout(() => alert.remove(), 500);
+            }, 5000);
+        }
+
+        // Fungsi untuk mendapatkan icon berdasarkan tipe notifikasi
+        function getIconForType(type) {
+            switch(type) {
+                case 'success': return 'fa-check-circle';
+                case 'danger': return 'fa-exclamation-circle';
+                case 'warning': return 'fa-exclamation-triangle';
+                case 'info': return 'fa-info-circle';
+                default: return 'fa-info-circle';
+            }
+        }
+
+        // Fungsi untuk auto close notifikasi yang ada
+        function autoCloseAlerts() {
+            const alerts = document.querySelectorAll('#alert-container .alert');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    alert.style.transition = 'opacity 0.5s';
+                    alert.style.opacity = '0';
+                    setTimeout(() => alert.remove(), 500);
+                }, 5000);
+            });
+        }
+
+        // Panggil fungsi auto close saat halaman dimuat
+        document.addEventListener('DOMContentLoaded', function() {
+            autoCloseAlerts();
+            
+            // Jika ada parameter success di URL, tampilkan notifikasi
+            const urlParams = new URLSearchParams(window.location.search);
+            if(urlParams.has('success')) {
+                showFlashMessage('success', urlParams.get('success'));
+            }
+        });
+
+        // Fungsi untuk delete portfolio (tambahkan notifikasi)
+        function deletePortfolio(portfolioId) {
+            fetch(`/portfolio/${portfolioId}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to delete portfolio');
+                }
+                return response.json();
+            })
+            .then(data => {
+                showFlashMessage('success', data.message || 'Portfolio deleted successfully');
+                setTimeout(() => window.location.reload(), 1000);
+            })
+            .catch(error => {
+                showFlashMessage('danger', error.message);
+            });
+        }
+
+        // Update fungsi showDeleteModal untuk menggunakan fetch
+        function showDeleteModal(portfolioId) {
+            document.getElementById('deletePortfolioId').value = portfolioId;
+            document.getElementById('deleteModal').style.display = 'flex';
+            
+            // Update form submission untuk menggunakan AJAX
+            document.getElementById('deleteForm').onsubmit = function(e) {
+                e.preventDefault();
+                const portfolioId = document.getElementById('deletePortfolioId').value;
+                deletePortfolio(portfolioId);
+                closeModal();
+            };
+        }
+    </script>
 </body>
 </html>
