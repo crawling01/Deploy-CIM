@@ -1118,7 +1118,7 @@ def index():
             LIMIT 5
         """)
         testimonials = [dict(row) for row in cursor.fetchall()]
-
+        
         cursor.execute("""
             SELECT name, image_path, url 
             FROM client_logos
@@ -1147,7 +1147,7 @@ def index():
             'team': team
         }
 
-   except Exception as e:
+    except Exception as e:
         print(f"Error fetching data for home page: {e}")
         services_data = []
         featured_portfolios = []
