@@ -1153,6 +1153,14 @@ def index():
         """)
         testimonials = [dict(row) for row in cursor.fetchall()]
 
+        cursor.execute("""
+            SELECT name, image_path, url 
+            FROM client_logos
+            WHERE is_active = 1
+            ORDER BY created_at DESC
+        """)
+        client_logos = [dict(row) for row in cursor.fetchall()
+
         # Get stats data
         cursor.execute("SELECT COUNT(*) as total FROM testimonials WHERE is_active = '1'")
         clients = cursor.fetchone()['total']
@@ -1173,12 +1181,13 @@ def index():
             'team': team
         }
 
-    except Exception as e:
+   except Exception as e:
         print(f"Error fetching data for home page: {e}")
         services_data = []
         featured_portfolios = []
         testimonials = []
         stats = {}
+        client_logos = []
     finally:
         cursor.close()
         conn.close()
@@ -1186,7 +1195,9 @@ def index():
     return render_template('home.html',
                          services=services_data,
                          featured_portfolios=featured_portfolios,
-                         testimonials=testimonials, stats=stats)
+                         testimonials=testimonials, 
+                         stats=stats,
+                         client_logos=client_logos)
 
 @app.route('/about-us')
 def about_us():
@@ -1666,6 +1677,11 @@ def escapejs(value):
             .replace('\t', '\\t'))
 
 app.jinja_env.filters['escapejs'] = escapejs
+
+@app.errorhandler(404)
+def page_not_found(e):
+    flash('Halaman yang Anda cari tidak ditemukan. Anda telah dialihkan ke halaman utama.', 'warning')
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     app.run(debug=True)
