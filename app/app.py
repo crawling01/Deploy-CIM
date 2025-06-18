@@ -1044,40 +1044,6 @@ def client_logo_detail(logo_id):
 def settings():
     return render_template('settings_admin.html')
 
-# Authentication routes
-@app.route('/register', methods=['GET', 'POST'])
-@login_required
-@is_admin
-def register():
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
-    if request.method == 'POST':
-        username = request.form.get('username')
-        fullname = request.form.get('fullname')
-        email = request.form.get('email')
-        password = request.form.get('password')
-        role = request.form.get('role', 'user')
-        
-        user = User.get_by_email_or_username(email)
-        if user:
-            flash('Email already registered!', 'danger')
-        else:
-            try:
-                new_user = User(
-                    username=username,
-                    fullname=fullname,
-                    email=email,
-                    role=role,
-                    is_admin=(role == 'admin')
-                )
-                new_user.set_password(password)
-                new_user.save()
-                flash('Account created successfully!', 'success')
-                return redirect(url_for('login'))
-            except Exception as e:
-                flash(f'Error creating account: {str(e)}', 'danger')
-    return render_template('register.html')
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -1159,7 +1125,7 @@ def index():
             WHERE is_active = 1
             ORDER BY created_at DESC
         """)
-        client_logos = [dict(row) for row in cursor.fetchall()
+        client_logos = [dict(row) for row in cursor.fetchall()]
 
         # Get stats data
         cursor.execute("SELECT COUNT(*) as total FROM testimonials WHERE is_active = '1'")
