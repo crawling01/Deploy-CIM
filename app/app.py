@@ -1662,6 +1662,11 @@ def calculate_seo_score(service):
     
     return score
 
+@app.errorhandler(404)
+def page_not_found(e):
+    flash('Halaman yang Anda cari tidak ditemukan. Anda telah dialihkan ke halaman utama.', 'warning')
+    return redirect(url_for('index'))
+
 @app.template_filter('escapejs')
 # Tambahkan custom filter
 def escapejs(value):
@@ -1677,11 +1682,6 @@ def escapejs(value):
             .replace('\t', '\\t'))
 
 app.jinja_env.filters['escapejs'] = escapejs
-
-@app.errorhandler(404)
-def page_not_found(e):
-    flash('Halaman yang Anda cari tidak ditemukan. Anda telah dialihkan ke halaman utama.', 'warning')
-    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     app.run(debug=True)
