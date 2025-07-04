@@ -21,6 +21,7 @@ import uuid
 app = Flask(__name__)
 app.secret_key = 'INIKODERAHASIAANDA'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=6)
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
 
 login_manager = LoginManager()
 login_manager.init_app(app)
