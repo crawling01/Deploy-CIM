@@ -230,9 +230,16 @@ def team_member_detail(member_id):
 def portfolio_categories():
     if request.method == 'POST':
         try:
-            name = request.form['name']
-            slug = request.form['slug']
-            description = request.form.get('description', '')
+            # Handle both form data and JSON
+            if request.is_json:
+                data = request.get_json()
+                name = data['name']
+                slug = data['slug']
+                description = data.get('description', '')
+            else:
+                name = request.form['name']
+                slug = request.form['slug']
+                description = request.form.get('description', '')
             
             new_category = PortfolioCategory(
                 name=name,
@@ -266,7 +273,7 @@ def portfolio_categories():
                 flash(error_msg, 'danger')
                 return redirect(url_for('portfolio_categories'))
     
-    # GET request - show all categories
+    # GET request - show all categories (this was missing before)
     categories = PortfolioCategory.get_all()
     return render_template('portfolio_categories.html', categories=categories)
 

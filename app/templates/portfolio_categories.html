@@ -710,16 +710,18 @@
                 });
         }
     
+        // For adding/editing categories
         document.getElementById('categoryForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
             const categoryId = document.getElementById('modalCategoryId').value;
             const isEdit = !!categoryId;
             
+            const formData = new FormData(this);
             const data = {
-                name: document.getElementById('modalName').value,
-                slug: document.getElementById('modalSlug').value,
-                description: document.getElementById('modalDescription').value
+                name: formData.get('name'),
+                slug: formData.get('slug'),
+                description: formData.get('description')
             };
             
             const endpoint = isEdit ? `/portfolio_category/${categoryId}` : '/portfolio_categories';
@@ -754,13 +756,7 @@
             });
         });
 
-        // Confirm delete action
-        function confirmDelete(categoryId) {
-            document.getElementById('deleteCategoryId').value = categoryId;
-            document.getElementById('deleteModal').style.display = 'flex';
-        }
-        
-        // Handle delete form submission
+        // For deleting categories
         document.getElementById('deleteForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const categoryId = document.getElementById('deleteCategoryId').value;
