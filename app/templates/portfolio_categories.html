@@ -566,7 +566,7 @@
                             <button class="action-btn edit" onclick="openEditModal('{{ category.id }}')">
                                 <i class="fas fa-edit"></i> Edit
                             </button>
-                            <button class="action-btn delete" onclick="confirmDelete('{{ category.id }}')">
+                            <button class="action-btn delete" data-category-id="{{ category.id }}">
                                 <i class="fas fa-trash"></i> Delete
                             </button>
                         </td>
@@ -815,6 +815,23 @@
                     alert.remove();
                 }, 5000);
             });
+        });
+
+        // Add this to your existing JavaScript code
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle delete button clicks
+            document.querySelectorAll('.action-btn.delete').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const categoryId = this.getAttribute('data-category-id');
+                    confirmDelete(categoryId);
+                });
+            });
+            
+            // Define the confirmDelete function
+            window.confirmDelete = function(categoryId) {
+                document.getElementById('deleteCategoryId').value = categoryId;
+                document.getElementById('deleteModal').style.display = 'flex';
+            };
         });
 
         document.addEventListener('DOMContentLoaded', function() {
